@@ -1,7 +1,7 @@
 provider "aws" {
   default_tags {
     tags = {
-      app                = "spotifyslackstatus"
+      app                = "APP_NAME"
       iacdeployer        = "terraform"
       iacdeployerversion = "TERRAFORM_VERSION" # Value from: terraform -version
       iacgitcommit       = "GIT_COMMIT"        # Value from: git rev-parse --short=7 HEAD
