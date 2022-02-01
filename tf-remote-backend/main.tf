@@ -3,6 +3,7 @@ locals {
   statelocktable = "statelock-${local.accountid}"
 }
 
+####################
 ##### Log Bucket
 resource "aws_s3_bucket" "logbucket" {
   bucket = local.logbucket
@@ -38,6 +39,22 @@ resource "aws_s3_bucket" "logbucket" {
     }
   }
   lifecycle_rule {
+    id      = "executelogs/"
+    enabled = true
+    prefix  = "executelogs//"
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+    transition {
+      days          = 60
+      storage_class = "GLACIER"
+    }
+    expiration {
+      days = 2562 # delete objects matching this rule after 7 years * 366 days = 2562 days including leap years
+    }
+  }
+  lifecycle_rule {
     id                                     = "incompleteuploads"
     enabled                                = true
     abort_incomplete_multipart_upload_days = 366
@@ -60,36 +77,33 @@ resource "aws_s3_bucket_ownership_controls" "logbucket_owner" {
     object_ownership = "BucketOwnerEnforced"
   }
 }
-data "aws_iam_policy_document" "allow_logging" {
-  # https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-server-access-logging.html
-  version = "2012-10-17"
-  statement {
-    sid    = "S3ServerAccessLogsPolicy"
-    effect = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["logging.s3.amazonaws.com"]
-    }
-    actions = [
-      "s3:PutObject"
-    ]
-    resources = [
-      "${aws_s3_bucket.logbucket.arn}/accesslogs/*",
-    ]
-    condition {
-      test     = "StringEquals"
-      variable = "aws:SourceAccount"
-      values = [
-        "${local.accountid}",
-      ]
-    }
-  }
-}
 resource "aws_s3_bucket_policy" "allow_logging" {
   bucket = aws_s3_bucket.logbucket.id
-  policy = data.aws_iam_policy_document.allow_logging.json
+  # https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-server-access-logging.html
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3ServerAccessLogsPolicy",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "logging.s3.amazonaws.com"
+      },
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::${aws_s3_bucket.logbucket.arn}/accesslogs/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:SourceAccount": "${local.accountid}"
+        }
+      }
+    }
+  ]
+}
+EOF
 }
 
+####################
 ##### State Bucket
 resource "aws_s3_bucket" "statebucket" {
   bucket = local.statebucket
@@ -148,6 +162,7 @@ resource "aws_s3_bucket_ownership_controls" "statebucket_owner" {
   }
 }
 
+####################
 ##### StateLock DynamoDB
 resource "aws_dynamodb_table" "statelock_table" {
   name         = local.statelocktable
