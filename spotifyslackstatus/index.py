@@ -11,15 +11,14 @@ def hello(event, context):
 
     responseCode = 200
     responseBody = {
-        "message": "Hello",
-        "input": event,
+        "message": "Hello"
     }
 
-    response = json.dumps({
+    response = {
         "statusCode": responseCode,
         "headers": {
             "x-custom-header" : "my custom header value"
         },
         "body": json.dumps(responseBody),
-    })
+    }
     return response

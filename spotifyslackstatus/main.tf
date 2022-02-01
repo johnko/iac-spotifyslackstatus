@@ -12,6 +12,7 @@ locals {
   lambdaloggroup  = "/aws/lambda/${local.lambdafunc}"
   logfilterrole   = "spotifyslackstatus-logfilter-role"
   logfilterpolicy = "spotifyslackstatus-logfilter-policy"
+  apigw           = "spotifyslackstatus-apigw"
 }
 
 
@@ -136,6 +137,20 @@ resource "aws_cloudwatch_log_group" "firehose_loggroup" {
     aws_kms_alias.kmsalias_cloudwatch,
   ]
 }
+# APIGW Logs
+resource "aws_cloudwatch_log_group" "apigw_loggroup" {
+  name              = "/aws/apigateway/${aws_apigatewayv2_api.apigw.name}"
+  retention_in_days = 90
+  kms_key_id        = "arn:aws:kms:${local.region}:${local.accountid}:alias/${local.kmscloudwatch}"
+  tags = {
+    Name               = "/aws/apigateway/${aws_apigatewayv2_api.apigw.name}"
+    dataclassification = "restricted"
+  }
+  depends_on = [
+    aws_kms_alias.kmsalias_cloudwatch,
+  ]
+}
+
 
 
 
@@ -388,4 +403,70 @@ EOF
 resource "aws_iam_role_policy_attachment" "lambda_attach_logging_policy" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.lambda_logging_policy.arn
+}
+
+
+
+
+####################
+##### API Gateway
+resource "aws_apigatewayv2_api" "apigw" {
+  name          = local.apigw
+  description   = local.apigw
+  protocol_type = "HTTP"
+  # cors_configuration {
+  #   allow_origins = ""
+  # }
+  # body # Don't use `body`, use `aws_apigatewayv2_integration` and `aws_apigatewayv2_route` instead
+  tags = {
+    Name               = local.apigw
+    dataclassification = "public"
+  }
+  depends_on = [
+    aws_lambda_function.lambda,
+    # aws_cloudwatch_log_group.apigw_loggroup,
+  ]
+}
+resource "aws_apigatewayv2_stage" "stage" {
+  api_id      = aws_apigatewayv2_api.apigw.id
+  name        = "${local.apigw}-stage"
+  auto_deploy = true
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.apigw_loggroup.arn
+    format = jsonencode({
+      requestId               = "$context.requestId"
+      sourceIp                = "$context.identity.sourceIp"
+      requestTime             = "$context.requestTime"
+      protocol                = "$context.protocol"
+      httpMethod              = "$context.httpMethod"
+      resourcePath            = "$context.resourcePath"
+      routeKey                = "$context.routeKey"
+      status                  = "$context.status"
+      responseLength          = "$context.responseLength"
+      integrationErrorMessage = "$context.integrationErrorMessage"
+      }
+    )
+  }
+}
+resource "aws_apigatewayv2_integration" "hello" {
+  api_id             = aws_apigatewayv2_api.apigw.id
+  integration_uri    = aws_lambda_function.lambda.invoke_arn
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
+}
+resource "aws_apigatewayv2_route" "hello" {
+  api_id    = aws_apigatewayv2_api.apigw.id
+  route_key = "GET /hello"
+  target    = "integrations/${aws_apigatewayv2_integration.hello.id}"
+}
+resource "aws_lambda_permission" "apigw" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.apigw.execution_arn}/*/*"
+}
+output "base_url" {
+  description = "Base URL for API Gateway stage."
+  value       = aws_apigatewayv2_stage.stage.invoke_url
 }
