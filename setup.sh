@@ -17,7 +17,6 @@ cat provider.template \
     > provider.tf
 
 # deploy state bucket and statelock table using local state
-mv backend.tf ../backend.tf
 terraform init
 terraform fmt
 terraform validate
@@ -25,7 +24,11 @@ terraform plan
 terraform apply
 
 # use the new remote backend
-mv ../backend.tf backend.tf
+cat backend.template \
+    | sed "s,APP_NAME,$APP," \
+    | sed "s,TERRAFORM_VERSION,$TERRAFORM_VERSION," \
+    | sed "s,GIT_COMMIT,$GIT_COMMIT," \
+    > backend.tf
 terraform init
 terraform plan
 
