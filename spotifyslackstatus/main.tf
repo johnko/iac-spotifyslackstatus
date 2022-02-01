@@ -11,14 +11,14 @@ resource "aws_dynamodb_table" "statelock_table" {
   # --attribute-definitions "AttributeName=id,AttributeType=S" \
   # --provisioned-throughput "ReadCapacityUnits=5,WriteCapacityUnits=5" \
   # --table-name flask_sessions
-  hash_key     = "id"
+  hash_key = "id"
   attribute {
     name = "id"
     type = "S"
   }
   # aws dynamodb update-time-to-live --time-to-live-specification 'Enabled=true,AttributeName=ttl' --table-name flask_sessions
   ttl {
-    enabled = true
+    enabled        = true
     attribute_name = "ttl"
   }
   server_side_encryption {
