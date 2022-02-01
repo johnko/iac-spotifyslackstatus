@@ -147,6 +147,10 @@ resource "aws_s3_bucket" "statebucket" {
     Name               = local.statebucket
     dataclassification = "confidential"
   }
+  depends_on = [
+    aws_s3_bucket_ownership_controls.logbucket_owner,
+    aws_s3_bucket_policy.allow_logging,
+  ]
 }
 resource "aws_s3_bucket_public_access_block" "statebucket_block" {
   bucket                  = aws_s3_bucket.statebucket.id
