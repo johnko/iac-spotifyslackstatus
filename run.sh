@@ -9,6 +9,7 @@ export AWS_ACCOUNT_ID
 echo $AWS_ACCOUNT_ID
 
 
+AWS_REGION="ca-central-1"
 ##########
 APP="spotifyslackstatus"
 pushd $APP
@@ -18,6 +19,7 @@ pushd $APP
 TERRAFORM_VERSION="$( terraform -version | grep Terraform | cut -d' ' -f2 )"
 GIT_COMMIT="$( git rev-parse --short=7 HEAD )"
 cat provider.template \
+    | sed "s,AWS_REGION,$AWS_REGION," \
     | sed "s,AWS_ACCOUNT_ID,$AWS_ACCOUNT_ID," \
     | sed "s,APP_NAME,$APP," \
     | sed "s,TERRAFORM_VERSION,$TERRAFORM_VERSION," \
@@ -26,6 +28,7 @@ cat provider.template \
 
 # use the new remote backend
 cat backend.template \
+    | sed "s,AWS_REGION,$AWS_REGION," \
     | sed "s,AWS_ACCOUNT_ID,$AWS_ACCOUNT_ID," \
     | sed "s,APP_NAME,$APP," \
     | sed "s,TERRAFORM_VERSION,$TERRAFORM_VERSION," \

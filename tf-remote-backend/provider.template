@@ -7,7 +7,7 @@ provider "aws" {
       iacgitcommit       = "GIT_COMMIT"        # Value from: git rev-parse --short=7 HEAD
     }
   }
-  region      = "ca-central-1"
+  region      = "AWS_REGION"
   max_retries = 5
 
   skip_get_ec2_platforms  = true
