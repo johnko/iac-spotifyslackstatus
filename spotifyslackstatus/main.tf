@@ -444,8 +444,7 @@ resource "aws_apigatewayv2_stage" "stage" {
       status                  = "$context.status"
       responseLength          = "$context.responseLength"
       integrationErrorMessage = "$context.integrationErrorMessage"
-      }
-    )
+    })
   }
 }
 resource "aws_apigatewayv2_integration" "hello" {
