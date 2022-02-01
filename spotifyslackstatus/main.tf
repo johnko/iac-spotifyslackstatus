@@ -167,6 +167,7 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_to_s3" {
   }
   depends_on = [
     aws_cloudwatch_log_group.firehose_loggroup,
+    aws_iam_role_policy_attachment.firehose_attach_policy,
   ]
 }
 resource "aws_iam_role" "firehose_role" {
@@ -241,6 +242,8 @@ resource "aws_cloudwatch_log_subscription_filter" "lambda_logfilter" {
   destination_arn = aws_kinesis_firehose_delivery_stream.firehose_to_s3.arn
   depends_on = [
     aws_cloudwatch_log_group.lambda_loggroup,
+    aws_iam_role_policy_attachment.logfilter_attach_policy,
+    aws_iam_role_policy_attachment.firehose_attach_policy,
   ]
 }
 resource "aws_iam_role" "logfilter_role" {
@@ -312,32 +315,32 @@ resource "aws_iam_role_policy_attachment" "logfilter_attach_policy" {
 
 
 ####################
-# ##### Lambda
-# resource "aws_lambda_function" "lambda" {
-#   function_name = local.lambdafunc
-#   role          = aws_iam_role.lambda_role.arn
-#   handler  = "index.lambda_handler"
-#   filename = "lambda_function_payload.zip"
-#   # The filebase64sha256() function is available in Terraform 0.11.12 and later
-#   # For Terraform 0.11.11 and earlier, use the base64sha256() function and the file() function:
-#   # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
-#   source_code_hash = filebase64sha256("lambda_function_payload.zip")
-#   runtime = "python3.8"
-#   environment {
-#     variables = {
-#       SESSION_DYNAMODB_TABLE  = local.sessiontable,
-#       SESSION_DYNAMODB_REGION = local.region,
-#     }
-#   }
-#   tags = {
-#     Name               = local.lambdafunc
-#     dataclassification = "public"
-#   }
-#   depends_on = [
-#     aws_iam_role_policy_attachment.lambda_attach_logging_policy,
-#     aws_cloudwatch_log_group.lambda_loggroup,
-#   ]
-# }
+##### Lambda
+resource "aws_lambda_function" "lambda" {
+  function_name = local.lambdafunc
+  role          = aws_iam_role.lambda_role.arn
+  handler       = "index.lambda_handler"
+  filename      = "lambda_function_payload.zip"
+  # The filebase64sha256() function is available in Terraform 0.11.12 and later
+  # For Terraform 0.11.11 and earlier, use the base64sha256() function and the file() function:
+  # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
+  source_code_hash = filebase64sha256("lambda_function_payload.zip")
+  runtime          = "python3.8"
+  environment {
+    variables = {
+      SESSION_DYNAMODB_TABLE  = local.sessiontable,
+      SESSION_DYNAMODB_REGION = local.region,
+    }
+  }
+  tags = {
+    Name               = local.lambdafunc
+    dataclassification = "public"
+  }
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_attach_logging_policy,
+    aws_cloudwatch_log_group.lambda_loggroup,
+  ]
+}
 resource "aws_iam_role" "lambda_role" {
   name               = local.lambdarole
   assume_role_policy = <<EOF
