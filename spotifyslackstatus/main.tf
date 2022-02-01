@@ -3,6 +3,13 @@ locals {
   lambdafunc      = "spotifyslackstatus-lambda-func"
   lambdarole      = "spotifyslackstatus-lambda-role"
   lambdalogpolicy = "spotifyslackstatus-lambda-log-policy"
+  kmscloudwatch   = "cmk/cloudwatch"
+  firehosetos3    = "spotifyslackstatus-firehose-to-s3"
+  firehoserole    = "spotifyslackstatus-firehose-role"
+  lambdalogfilter = "spotifyslackstatus-logfilter"
+  lambdaloggroup  = "/aws/lambda/${local.lambdafunc}"
+  logfilterrole   = "spotifyslackstatus-logfilter-role"
+  logfilterpolicy = "spotifyslackstatus-logfilter-policy"
 }
 
 ##### StateLock DynamoDB
@@ -36,8 +43,7 @@ resource "aws_dynamodb_table" "statelock_table" {
 
 ##### Lambda IAM Role
 resource "aws_iam_role" "lambda_role" {
-  name = local.lambdarole
-
+  name               = local.lambdarole
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -64,8 +70,7 @@ resource "aws_iam_policy" "lambda_logging_policy" {
   name        = local.lambdalogpolicy
   path        = "/"
   description = "IAM policy for logging from a lambda"
-
-  policy = <<EOF
+  policy      = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -76,7 +81,7 @@ resource "aws_iam_policy" "lambda_logging_policy" {
         "logs:CreateLogStream",
         "logs:PutLogEvents"
       ],
-      "Resource": "arn:aws:logs:*:*:*",
+      "Resource": "arn:aws:logs:*:${local.accountid}:*",
       "Effect": "Allow"
     }
   ]
@@ -90,38 +95,240 @@ resource "aws_iam_role_policy_attachment" "lambda_attach_logging_policy" {
   policy_arn = aws_iam_policy.lambda_logging_policy.arn
 }
 
-##### Lambda Log Group
-resource "aws_cloudwatch_log_group" "lambda_loggroup" {
-  name              = "/aws/lambda/${local.lambdafunc}"
-  retention_in_days = 90
+##### KMS CMK CloudWatch
+data "aws_iam_policy_document" "kms_resource_policy" {
+  version = "2012-10-17"
+  statement {
+    sid    = "Enable IAM User Permissions"
+    effect = "Allow"
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${local.accountid}:root"]
+    }
+    actions = [
+      "kms:*",
+    ]
+    resources = ["*"]
+  }
+  statement {
+    sid    = "AllowCloudWatchUse"
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${local.region}.amazonaws.com"]
+    }
+    actions = [
+      "kms:Encrypt*",
+      "kms:Decrypt*",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:Describe*",
+    ]
+    resources = ["*"]
+    condition {
+      test     = "ArnEquals"
+      variable = "kms:EncryptionContext:aws:logs:arn"
+      values = [
+        "arn:aws:logs:${local.region}:${local.accountid}:*",
+      ]
+    }
+  }
+}
+resource "aws_kms_key" "cmk_cloudwatch" {
+  description              = "cmk_cloudwatch"
+  key_usage                = "ENCRYPT_DECRYPT"
+  customer_master_key_spec = "SYMMETRIC_DEFAULT"
+  policy                   = data.aws_iam_policy_document.kms_resource_policy.json
+  deletion_window_in_days  = 7
+  is_enabled               = true
+  enable_key_rotation      = true
+  tags = {
+    Name               = local.kmscloudwatch
+    dataclassification = "restricted"
+  }
+}
+resource "aws_kms_alias" "kmsalias_cloudwatch" {
+  name          = "alias/${local.kmscloudwatch}"
+  target_key_id = aws_kms_key.cmk_cloudwatch.key_id
 }
 
-##### Lambda
-resource "aws_lambda_function" "lambda" {
-  function_name = local.lambdafunc
-  role          = aws_iam_role.lambda_role.arn
+##### Lambda Log Group
+resource "aws_cloudwatch_log_group" "lambda_loggroup" {
+  name              = local.lambdaloggroup
+  retention_in_days = 90
+  kms_key_id        = "arn:aws:kms:${local.region}:${local.accountid}:alias/${local.kmscloudwatch}"
+  tags = {
+    Name               = local.lambdaloggroup
+    dataclassification = "restricted"
+  }
+}
+##### Firehose Log Group
+resource "aws_cloudwatch_log_group" "firehose_loggroup" {
+  name              = "/aws/kinesisfirehose/${local.firehosetos3}"
+  retention_in_days = 90
+  kms_key_id        = "arn:aws:kms:${local.region}:${local.accountid}:alias/${local.kmscloudwatch}"
+  tags = {
+    Name               = "/aws/kinesisfirehose/${local.firehosetos3}"
+    dataclassification = "restricted"
+  }
+}
 
-  handler  = "index.lambda_handler"
-  filename = "lambda_function_payload.zip"
-  # The filebase64sha256() function is available in Terraform 0.11.12 and later
-  # For Terraform 0.11.11 and earlier, use the base64sha256() function and the file() function:
-  # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
-  source_code_hash = filebase64sha256("lambda_function_payload.zip")
+##### Firehose IAM Role
+resource "aws_iam_role" "firehose_role" {
+  name               = local.firehoserole
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowFirehoseServiceAssumeRole",
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "firehose.amazonaws.com"
+      },
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+  tags = {
+    Name               = local.firehoserole
+    dataclassification = "internal"
+  }
+}
 
-  runtime = "python3.8"
-
-  environment {
-    variables = {
-      SESSION_DYNAMODB_TABLE  = local.sessiontable,
-      SESSION_DYNAMODB_REGION = "ca-central-1",
+##### Firehose
+resource "aws_kinesis_firehose_delivery_stream" "firehose_to_s3" {
+  name        = local.firehosetos3
+  destination = "extended_s3"
+  server_side_encryption {
+    enabled  = true
+    key_type = "AWS_OWNED_CMK"
+  }
+  extended_s3_configuration {
+    role_arn           = aws_iam_role.firehose_role.arn
+    bucket_arn         = "arn:aws:s3:::${local.logbucket}"
+    prefix             = "executelogs/lambda/${local.lambdafunc}/"
+    compression_format = "GZIP"
+    kms_key_arn        = "arn:aws:kms:${local.region}:${local.accountid}:alias/aws/s3"
+    cloudwatch_logging_options {
+      enabled         = true
+      log_group_name  = "/aws/kinesisfirehose/${local.firehosetos3}"
+      log_stream_name = "logstream"
     }
   }
   tags = {
-    Name               = local.lambdafunc
-    dataclassification = "public"
+    Name               = local.firehosetos3
+    dataclassification = "restricted"
   }
-  depends_on = [
-    aws_iam_role_policy_attachment.lambda_attach_logging_policy,
-    aws_cloudwatch_log_group.lambda_loggroup,
+}
+
+##### SubscriptionFilter IAM Policy
+resource "aws_iam_policy" "logfilter_policy" {
+  name        = local.logfilterpolicy
+  path        = "/"
+  description = "IAM policy for logging from a lambda"
+  policy      = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowSubscribe",
+      "Action": [
+        "logs:PutSubscriptionFilter"
+      ],
+      "Resource": "arn:aws:logs:*:${local.accountid}:*",
+      "Effect": "Allow"
+    },
+    {
+      "Sid": "AllowFirehoseAll",
+      "Action": [
+        "firehose:ListDeliveryStreams"
+      ],
+      "Resource": "*",
+      "Effect": "Allow"
+    },
+    {
+      "Sid": "AllowFirehosePutEvents",
+      "Action": [
+        "firehose:DescribeDeliveryStream",
+        "firehose:PutRecord",
+        "firehose:PutRecordBatch"
+      ],
+      "Resource": "arn:aws:firehose:*:${local.accountid}:*",
+      "Effect": "Allow"
+    }
   ]
 }
+EOF
+}
+
+##### SubscriptionFilter IAM Role
+resource "aws_iam_role" "logfilter_role" {
+  name               = local.logfilterrole
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowFirehoseServiceAssumeRole",
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "logs.amazonaws.com"
+      },
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+  tags = {
+    Name               = local.logfilterrole
+    dataclassification = "internal"
+  }
+}
+
+##### Attach  Lambda Managed IAM policy  to  Lambda IAM Role
+resource "aws_iam_role_policy_attachment" "logfilter_attach_policy" {
+  role       = aws_iam_role.logfilter_role.name
+  policy_arn = aws_iam_policy.logfilter_policy.arn
+}
+
+##### CloudWatch SubscriptionFilter forwards logs to firehose to bucket
+resource "aws_cloudwatch_log_subscription_filter" "lambda_logfilter" {
+  name           = local.lambdalogfilter
+  role_arn       = aws_iam_role.logfilter_role.arn
+  log_group_name = local.lambdaloggroup
+  # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html
+  filter_pattern  = " " # all events
+  destination_arn = aws_kinesis_firehose_delivery_stream.firehose_to_s3.arn
+}
+
+# ##### Lambda
+# resource "aws_lambda_function" "lambda" {
+#   function_name = local.lambdafunc
+#   role          = aws_iam_role.lambda_role.arn
+
+#   handler  = "index.lambda_handler"
+#   filename = "lambda_function_payload.zip"
+#   # The filebase64sha256() function is available in Terraform 0.11.12 and later
+#   # For Terraform 0.11.11 and earlier, use the base64sha256() function and the file() function:
+#   # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
+#   source_code_hash = filebase64sha256("lambda_function_payload.zip")
+
+#   runtime = "python3.8"
+
+#   environment {
+#     variables = {
+#       SESSION_DYNAMODB_TABLE  = local.sessiontable,
+#       SESSION_DYNAMODB_REGION = local.region,
+#     }
+#   }
+#   tags = {
+#     Name               = local.lambdafunc
+#     dataclassification = "public"
+#   }
+#   depends_on = [
+#     aws_iam_role_policy_attachment.lambda_attach_logging_policy,
+#     aws_cloudwatch_log_group.lambda_loggroup,
+#   ]
+# }
