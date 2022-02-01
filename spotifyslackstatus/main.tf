@@ -119,6 +119,9 @@ resource "aws_cloudwatch_log_group" "lambda_loggroup" {
     Name               = local.lambdaloggroup
     dataclassification = "restricted"
   }
+  depends_on = [
+    aws_kms_alias.kmsalias_cloudwatch,
+  ]
 }
 # Firehose Logs
 resource "aws_cloudwatch_log_group" "firehose_loggroup" {
@@ -129,6 +132,9 @@ resource "aws_cloudwatch_log_group" "firehose_loggroup" {
     Name               = "/aws/kinesisfirehose/${local.firehosetos3}"
     dataclassification = "restricted"
   }
+  depends_on = [
+    aws_kms_alias.kmsalias_cloudwatch,
+  ]
 }
 
 
@@ -159,6 +165,9 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_to_s3" {
     Name               = local.firehosetos3
     dataclassification = "restricted"
   }
+  depends_on = [
+    aws_cloudwatch_log_group.firehose_loggroup,
+  ]
 }
 resource "aws_iam_role" "firehose_role" {
   name               = local.firehoserole
