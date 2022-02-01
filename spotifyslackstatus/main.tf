@@ -98,49 +98,46 @@ resource "aws_iam_role_policy_attachment" "lambda_attach_logging_policy" {
 }
 
 ##### KMS CMK CloudWatch
-data "aws_iam_policy_document" "kms_resource_policy" {
-  version = "2012-10-17"
-  statement {
-    sid = "Enable IAM User Permissions"
-    actions = [
-      "kms:*",
-    ]
-    effect = "Allow"
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${local.accountid}:root"]
-    }
-    resources = ["*"]
-  }
-  statement {
-    sid = "AllowCloudWatchUse"
-    actions = [
-      "kms:Encrypt*",
-      "kms:Decrypt*",
-      "kms:ReEncrypt*",
-      "kms:GenerateDataKey*",
-      "kms:Describe*",
-    ]
-    condition {
-      test     = "ArnEquals"
-      variable = "kms:EncryptionContext:aws:logs:arn"
-      values = [
-        "arn:aws:logs:${local.region}:${local.accountid}:*",
-      ]
-    }
-    effect = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["logs.${local.region}.amazonaws.com"]
-    }
-    resources = ["*"]
-  }
-}
 resource "aws_kms_key" "cmk_cloudwatch" {
   description              = "cmk_cloudwatch"
   key_usage                = "ENCRYPT_DECRYPT"
   customer_master_key_spec = "SYMMETRIC_DEFAULT"
-  policy                   = data.aws_iam_policy_document.kms_resource_policy.json
+  policy                   = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "Enable IAM User Permissions",
+      "Action": "kms:*",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::${local.accountid}:root"
+      },
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowCloudWatchUse",
+      "Action": [
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:Encrypt*",
+        "kms:Describe*",
+        "kms:Decrypt*"
+      ],
+      "Condition": {
+        "ArnEquals": {
+          "kms:EncryptionContext:aws:logs:arn": "arn:aws:logs:${local.region}:${local.accountid}:*"
+        }
+      },
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "logs.${local.region}.amazonaws.com"
+      },
+      "Resource": "*"
+    }
+  ]
+}
+EOF
   deletion_window_in_days  = 7
   is_enabled               = true
   enable_key_rotation      = true
@@ -186,6 +183,16 @@ resource "aws_iam_policy" "firehose_policy" {
 {
   "Version": "2012-10-17",
   "Statement": [
+    {
+      "Sid": "AllowLambdaCreateLogs",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:logs:*:${local.accountid}:*"
+    },
     {
       "Sid": "AllowWriteToBucket",
       "Action": [
