@@ -6,6 +6,8 @@ locals {
   kmscloudwatch   = "cmk/cloudwatch"
   firehosetos3    = "spotifyslackstatus-firehose-to-s3"
   firehoserole    = "spotifyslackstatus-firehose-role"
+  firehosepolicy  = "spotifyslackstatus-firehose-policy"
+  firehoseprefix  = "executelogs/lambda/${local.lambdafunc}/"
   lambdalogfilter = "spotifyslackstatus-logfilter"
   lambdaloggroup  = "/aws/lambda/${local.lambdafunc}"
   logfilterrole   = "spotifyslackstatus-logfilter-role"
@@ -51,10 +53,10 @@ resource "aws_iam_role" "lambda_role" {
     {
       "Sid": "AllowLambdaServiceAssumeRole",
       "Action": "sts:AssumeRole",
+      "Effect": "Allow",
       "Principal": {
         "Service": "lambda.amazonaws.com"
-      },
-      "Effect": "Allow"
+      }
     }
   ]
 }
@@ -81,8 +83,8 @@ resource "aws_iam_policy" "lambda_logging_policy" {
         "logs:CreateLogStream",
         "logs:PutLogEvents"
       ],
-      "Resource": "arn:aws:logs:*:${local.accountid}:*",
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": "arn:aws:logs:*:${local.accountid}:*"
     }
   ]
 }
@@ -99,24 +101,19 @@ resource "aws_iam_role_policy_attachment" "lambda_attach_logging_policy" {
 data "aws_iam_policy_document" "kms_resource_policy" {
   version = "2012-10-17"
   statement {
-    sid    = "Enable IAM User Permissions"
+    sid = "Enable IAM User Permissions"
+    actions = [
+      "kms:*",
+    ]
     effect = "Allow"
     principals {
       type        = "AWS"
       identifiers = ["arn:aws:iam::${local.accountid}:root"]
     }
-    actions = [
-      "kms:*",
-    ]
     resources = ["*"]
   }
   statement {
-    sid    = "AllowCloudWatchUse"
-    effect = "Allow"
-    principals {
-      type        = "Service"
-      identifiers = ["logs.${local.region}.amazonaws.com"]
-    }
+    sid = "AllowCloudWatchUse"
     actions = [
       "kms:Encrypt*",
       "kms:Decrypt*",
@@ -124,7 +121,6 @@ data "aws_iam_policy_document" "kms_resource_policy" {
       "kms:GenerateDataKey*",
       "kms:Describe*",
     ]
-    resources = ["*"]
     condition {
       test     = "ArnEquals"
       variable = "kms:EncryptionContext:aws:logs:arn"
@@ -132,6 +128,12 @@ data "aws_iam_policy_document" "kms_resource_policy" {
         "arn:aws:logs:${local.region}:${local.accountid}:*",
       ]
     }
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${local.region}.amazonaws.com"]
+    }
+    resources = ["*"]
   }
 }
 resource "aws_kms_key" "cmk_cloudwatch" {
@@ -173,6 +175,30 @@ resource "aws_cloudwatch_log_group" "firehose_loggroup" {
   }
 }
 
+
+
+##### Firehose Managed IAM policy
+resource "aws_iam_policy" "firehose_policy" {
+  name        = local.firehosepolicy
+  path        = "/"
+  description = "IAM policy for logging from a lambda"
+  policy      = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowWriteToBucket",
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::${local.logbucket}/${local.firehoseprefix}*"
+    }
+  ]
+}
+EOF
+}
+
 ##### Firehose IAM Role
 resource "aws_iam_role" "firehose_role" {
   name               = local.firehoserole
@@ -183,10 +209,10 @@ resource "aws_iam_role" "firehose_role" {
     {
       "Sid": "AllowFirehoseServiceAssumeRole",
       "Action": "sts:AssumeRole",
+      "Effect": "Allow",
       "Principal": {
         "Service": "firehose.amazonaws.com"
-      },
-      "Effect": "Allow"
+      }
     }
   ]
 }
@@ -195,6 +221,12 @@ EOF
     Name               = local.firehoserole
     dataclassification = "internal"
   }
+}
+
+##### Attach  Firehose Managed IAM policy  to  Firehose IAM Role
+resource "aws_iam_role_policy_attachment" "firehose_attach_policy" {
+  role       = aws_iam_role.firehose_role.name
+  policy_arn = aws_iam_policy.firehose_policy.arn
 }
 
 ##### Firehose
@@ -208,7 +240,7 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose_to_s3" {
   extended_s3_configuration {
     role_arn           = aws_iam_role.firehose_role.arn
     bucket_arn         = "arn:aws:s3:::${local.logbucket}"
-    prefix             = "executelogs/lambda/${local.lambdafunc}/"
+    prefix             = local.firehoseprefix
     compression_format = "GZIP"
     kms_key_arn        = "arn:aws:kms:${local.region}:${local.accountid}:alias/aws/s3"
     cloudwatch_logging_options {
@@ -237,16 +269,16 @@ resource "aws_iam_policy" "logfilter_policy" {
       "Action": [
         "logs:PutSubscriptionFilter"
       ],
-      "Resource": "arn:aws:logs:*:${local.accountid}:*",
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": "arn:aws:logs:*:${local.accountid}:*"
     },
     {
       "Sid": "AllowFirehoseAll",
       "Action": [
         "firehose:ListDeliveryStreams"
       ],
-      "Resource": "*",
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": "*"
     },
     {
       "Sid": "AllowFirehosePutEvents",
@@ -255,8 +287,8 @@ resource "aws_iam_policy" "logfilter_policy" {
         "firehose:PutRecord",
         "firehose:PutRecordBatch"
       ],
-      "Resource": "arn:aws:firehose:*:${local.accountid}:*",
-      "Effect": "Allow"
+      "Effect": "Allow",
+      "Resource": "arn:aws:firehose:*:${local.accountid}:*"
     }
   ]
 }
@@ -273,10 +305,10 @@ resource "aws_iam_role" "logfilter_role" {
     {
       "Sid": "AllowFirehoseServiceAssumeRole",
       "Action": "sts:AssumeRole",
+      "Effect": "Allow",
       "Principal": {
         "Service": "logs.amazonaws.com"
-      },
-      "Effect": "Allow"
+      }
     }
   ]
 }
