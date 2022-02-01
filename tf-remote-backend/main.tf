@@ -91,7 +91,7 @@ resource "aws_s3_bucket_policy" "allow_logging" {
         "Service": "logging.s3.amazonaws.com"
       },
       "Action": "s3:PutObject",
-      "Resource": "arn:aws:s3:::${aws_s3_bucket.logbucket.arn}/accesslogs/*",
+      "Resource": "${aws_s3_bucket.logbucket.arn}/accesslogs/*",
       "Condition": {
         "StringEquals": {
           "aws:SourceAccount": "${local.accountid}"
