@@ -1,14 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Need the PowerUserAccess and IAMFullAccess AWS SSO / IAM PermissionSet
+
+echo -n "Input your AWS_ACCOUNT_ID: "
+read -r AWS_ACCOUNT_ID
+export AWS_ACCOUNT_ID
+echo $AWS_ACCOUNT_ID
+
+
 ##########
 APP="spotifyslackstatus"
 pushd $APP
+
 
 # replace variables
 TERRAFORM_VERSION="$( terraform -version | grep Terraform | cut -d' ' -f2 )"
 GIT_COMMIT="$( git rev-parse --short=7 HEAD )"
 cat provider.template \
+    | sed "s,AWS_ACCOUNT_ID,$AWS_ACCOUNT_ID," \
     | sed "s,APP_NAME,$APP," \
     | sed "s,TERRAFORM_VERSION,$TERRAFORM_VERSION," \
     | sed "s,GIT_COMMIT,$GIT_COMMIT," \
@@ -16,6 +26,7 @@ cat provider.template \
 
 # use the new remote backend
 cat backend.template \
+    | sed "s,AWS_ACCOUNT_ID,$AWS_ACCOUNT_ID," \
     | sed "s,APP_NAME,$APP," \
     | sed "s,TERRAFORM_VERSION,$TERRAFORM_VERSION," \
     | sed "s,GIT_COMMIT,$GIT_COMMIT," \
