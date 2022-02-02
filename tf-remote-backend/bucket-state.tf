@@ -31,7 +31,7 @@ resource "aws_s3_bucket" "statebucket" {
       storage_class = "GLACIER"
     }
     noncurrent_version_expiration {
-      days = 90 # delete old objects matching this rule after 90 days
+      days = 2562 # delete objects matching this rule after 7 years * 366 days = 2562 days including leap years
     }
   }
   lifecycle_rule {
@@ -85,7 +85,19 @@ resource "aws_s3_bucket_policy" "bucketpolicy_statebucket" {
           "s3:x-amz-server-side-encryption": "aws:kms"
         }
       }
-    }
+    },
+    {
+      "Sid": "DenyWrongAccountUploads",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:PutObject",
+      "Resource": "${aws_s3_bucket.statebucket.arn}/*",
+      "Condition": {
+        "StringNotEquals": {
+          "aws:SourceAccount": "${local.accountid}"
+        }
+      }
+    },
   ]
 }
 EOF
