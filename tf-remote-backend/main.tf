@@ -1,6 +1,5 @@
 locals {
   statebucket    = "statebucket-${local.accountid}"
-  statelocktable = "statelock-${local.accountid}"
 }
 
 ####################
@@ -163,25 +162,5 @@ resource "aws_s3_bucket_ownership_controls" "statebucket_owner" {
   bucket = aws_s3_bucket.statebucket.id
   rule {
     object_ownership = "BucketOwnerEnforced"
-  }
-}
-
-####################
-##### StateLock DynamoDB
-resource "aws_dynamodb_table" "statelock_table" {
-  name         = local.statelocktable
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-  server_side_encryption {
-    enabled = true
-  }
-  table_class = "STANDARD"
-  tags = {
-    Name               = local.statelocktable
-    dataclassification = "confidential"
   }
 }
