@@ -56,7 +56,7 @@ resource "aws_dynamodb_table" "statelock_table" {
 resource "aws_cloudwatch_log_group" "lambda_loggroup" {
   name              = local.lambdaloggroup
   retention_in_days = 90
-  kms_key_id        = "arn:aws:kms:${local.region}:${local.accountid}:alias/${local.kmscloudwatch}"
+  kms_key_id        = aws_kms_key.cmk_cloudwatch.arn
   tags = {
     Name               = local.lambdaloggroup
     dataclassification = "restricted"
@@ -69,7 +69,7 @@ resource "aws_cloudwatch_log_group" "lambda_loggroup" {
 resource "aws_cloudwatch_log_group" "firehose_loggroup" {
   name              = "/aws/kinesisfirehose/${local.firehosetos3}"
   retention_in_days = 90
-  kms_key_id        = "arn:aws:kms:${local.region}:${local.accountid}:alias/${local.kmscloudwatch}"
+  kms_key_id        = aws_kms_key.cmk_cloudwatch.arn
   tags = {
     Name               = "/aws/kinesisfirehose/${local.firehosetos3}"
     dataclassification = "restricted"
@@ -82,7 +82,7 @@ resource "aws_cloudwatch_log_group" "firehose_loggroup" {
 resource "aws_cloudwatch_log_group" "apigw_loggroup" {
   name              = "/aws/apigateway/${local.apigw}"
   retention_in_days = 90
-  kms_key_id        = "arn:aws:kms:${local.region}:${local.accountid}:alias/${local.kmscloudwatch}"
+  kms_key_id        = aws_kms_key.cmk_cloudwatch.arn
   tags = {
     Name               = "/aws/apigateway/${local.apigw}"
     dataclassification = "restricted"
