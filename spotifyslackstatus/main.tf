@@ -139,11 +139,11 @@ resource "aws_cloudwatch_log_group" "firehose_loggroup" {
 }
 # APIGW Logs
 resource "aws_cloudwatch_log_group" "apigw_loggroup" {
-  name              = "/aws/apigateway/${aws_apigatewayv2_api.apigw.name}"
+  name              = "/aws/apigateway/${local.apigw}"
   retention_in_days = 90
   kms_key_id        = "arn:aws:kms:${local.region}:${local.accountid}:alias/${local.kmscloudwatch}"
   tags = {
-    Name               = "/aws/apigateway/${aws_apigatewayv2_api.apigw.name}"
+    Name               = "/aws/apigateway/${local.apigw}"
     dataclassification = "restricted"
   }
   depends_on = [
