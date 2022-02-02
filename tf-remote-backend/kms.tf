@@ -25,7 +25,7 @@ resource "aws_kms_key" "cmk_tfremotebackend" {
       "Sid" : "Allow access through Amazon DynamoDB for all principals in the account that are authorized to use Amazon DynamoDB",
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::${local.accountid}:role/aws-reserved/sso.amazonaws.com/ca-central-1/AWSReservedSSO_PowerUserAccess_*"
+        "AWS": "${local.whoamiarn}"
       },
       "Action": [
         "kms:Encrypt",
@@ -46,7 +46,7 @@ resource "aws_kms_key" "cmk_tfremotebackend" {
       "Sid":  "Allow administrators to view the KMS key and revoke grants",
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::${local.accountid}:role/aws-reserved/sso.amazonaws.com/ca-central-1/AWSReservedSSO_PowerUserAccess_*"
+        "AWS": "${local.whoamiarn}"
       },
       "Action": [
         "kms:Describe*",
