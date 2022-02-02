@@ -16,7 +16,7 @@ pushd $APP
 
 
 # replace variables
-TERRAFORM_VERSION="$( terraform -version | grep Terraform | cut -d' ' -f2 )"
+TERRAFORM_VERSION="$( terraform -version | grep -v 'Your version of Terraform' | grep Terraform | cut -d' ' -f2 )"
 GIT_COMMIT="$( git rev-parse --short=7 HEAD )"
 cat provider.template \
     | sed "s,AWS_REGION,$AWS_REGION," \
