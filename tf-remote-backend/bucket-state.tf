@@ -1,5 +1,5 @@
 locals {
-  statebucket    = "statebucket-${local.accountid}"
+  statebucket = "statebucket-${local.accountid}"
 }
 
 ####################
@@ -10,7 +10,7 @@ resource "aws_s3_bucket" "statebucket" {
   server_side_encryption_configuration {
     rule {
       apply_server_side_encryption_by_default {
-        sse_algorithm = "aws:kms"
+        sse_algorithm     = "aws:kms"
         kms_master_key_id = aws_kms_key.cmk_tfremotebackend.arn # comment this out if you want to use alias/aws/s3
       }
       bucket_key_enabled = true # encrypt with KMS per bucket instead of per object

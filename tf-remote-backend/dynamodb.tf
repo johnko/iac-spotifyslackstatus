@@ -13,7 +13,7 @@ resource "aws_dynamodb_table" "table_statelock" {
     type = "S"
   }
   server_side_encryption {
-    enabled = true
+    enabled     = true
     kms_key_arn = aws_kms_key.cmk_tfremotebackend.arn # comment this out if you want to use alias/aws/dynamodb
   }
   table_class = "STANDARD"

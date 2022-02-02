@@ -1,5 +1,5 @@
 locals {
-  alias_cmktfremotebackend   = "cmk/tf-remote-backend"
+  alias_cmktfremotebackend = "cmk/tf-remote-backend"
 }
 
 ####################
