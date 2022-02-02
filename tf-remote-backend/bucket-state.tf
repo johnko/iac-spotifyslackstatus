@@ -50,7 +50,7 @@ resource "aws_s3_bucket" "statebucket" {
   depends_on = [
     aws_s3_bucket_public_access_block.blockpublic_logbucket,
     aws_s3_bucket_ownership_controls.bucketowner_logbucket,
-    aws_s3_bucket_policy.bucketpolicy_allowaccesslogs,
+    aws_s3_bucket_policy.bucketpolicy_logbucket,
   ]
 }
 resource "aws_s3_bucket_public_access_block" "blockpublic_statebucket" {
