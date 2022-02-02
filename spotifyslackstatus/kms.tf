@@ -1,6 +1,7 @@
 locals {
   kmscloudwatch   = "cmk/cloudwatch"
 }
+
 ####################
 ##### KMS CMK CloudWatch
 resource "aws_kms_key" "cmk_cloudwatch" {
