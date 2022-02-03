@@ -1,5 +1,5 @@
 locals {
-  firehose2s3_hellolambda_name       = "${aws_lambda_function.lambdahello.name}-firehose2s3"
+  firehose2s3_hellolambda_name       = "${aws_lambda_function.lambdahello.function_name}-firehose2s3"
   loggroup_firehose2s3loglambda_name = "/aws/kinesisfirehose/${local.firehose2s3_hellolambda_name}"
 }
 
