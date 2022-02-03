@@ -32,7 +32,7 @@ resource "aws_iam_policy" "policy_fh2s3executelog" {
   path        = "/"
   description = "Let Firehose write to logbucket"
   # Don't allow logs:CreateLogGroup because we create the encrypted loggroup_lambda
-  policy      = <<EOF
+  policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
