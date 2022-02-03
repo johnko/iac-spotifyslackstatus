@@ -1,5 +1,5 @@
 locals {
-  sessiontable_name = "spotifyslackstatus-flask_sessions-${local.accountid}"
+  sessiontable_name = "${local.app}-flask_sessions-${local.accountid}"
 }
 
 ####################

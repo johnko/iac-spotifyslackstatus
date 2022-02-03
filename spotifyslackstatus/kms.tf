@@ -1,5 +1,5 @@
 locals {
-  alias_cmkspotifyslackstatus = "cmk/spotifyslackstatus"
+  alias_cmkspotifyslackstatus = "cmk/${local.app}"
 }
 
 ####################
