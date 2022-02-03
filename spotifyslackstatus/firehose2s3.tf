@@ -26,7 +26,7 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose2s3_loglambda" {
   extended_s3_configuration {
     role_arn           = aws_iam_role.role_firehose2s3executelog.arn
     bucket_arn         = "arn:aws:s3:::${local.logbucket}"
-    prefix             = "executelogs/lambda/${aws_lambda_function.lambdahello.name}/"
+    prefix             = "executelogs/lambda/${aws_lambda_function.lambdahello.function_name}/"
     compression_format = "GZIP"
     # kms_key_arn not used since logbucket is SSE-S3 / AES256
     cloudwatch_logging_options {
