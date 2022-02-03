@@ -1,9 +1,9 @@
 locals {
   loggroup_lambdahello_name = "/aws/lambda/${local.lambda_hello_name}"
-  lambda_hello_name         = "${local.app}-lambdahello"
-  loggroup_fh2s3lambdahello_name = "/aws/kinesisfirehose/${local.fh2s3_lambdahello_name}"
-  fh2s3_lambdahello_name       = "${aws_lambda_function.lambdahello.function_name}-firehose2s3"
-  subfilter_lambdahello_name = "${local.lambda_hello_name}-subfil"
+  lambda_hello_name         = "${local.app}-hello"
+  loggroup_fh2s3hello_name = "/aws/kinesisfirehose/${local.fh2s3_hello_name}"
+  fh2s3_hello_name       = "${aws_lambda_function.lambdahello.function_name}-fh2s3"
+  subfilter_cw2fhhello_name = "${local.lambda_hello_name}-subfil"
 }
 
 ##### Lambda LogGroup
@@ -46,18 +46,18 @@ resource "aws_lambda_function" "lambdahello" {
 
 ####################
 ##### Firehose LogGroup
-resource "aws_cloudwatch_log_group" "loggroup_firehose2s3loglambda" {
-  name              = local.loggroup_fh2s3lambdahello_name
+resource "aws_cloudwatch_log_group" "loggroup_fh2s3hello" {
+  name              = local.loggroup_fh2s3hello_name
   retention_in_days = 90
   kms_key_id        = aws_kms_key.cmk_spotifyslackstatus.arn
   tags = {
-    Name               = local.loggroup_fh2s3lambdahello_name
+    Name               = local.loggroup_fh2s3hello_name
     dataclassification = "restricted"
   }
 }
 ##### Firehose repeat for each lambda
-resource "aws_kinesis_firehose_delivery_stream" "firehose2s3_loglambda" {
-  name        = local.fh2s3_lambdahello_name
+resource "aws_kinesis_firehose_delivery_stream" "fh2s3_hello" {
+  name        = local.fh2s3_hello_name
   destination = "extended_s3"
   server_side_encryption {
     enabled  = true
@@ -65,36 +65,36 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose2s3_loglambda" {
     key_arn  = aws_kms_key.cmk_spotifyslackstatus.arn # comment this out if you want to use AWS_OWNED_CMK
   }
   extended_s3_configuration {
-    role_arn           = aws_iam_role.role_firehose2s3executelog.arn
+    role_arn           = aws_iam_role.role_fh2s3executelog.arn
     bucket_arn         = "arn:aws:s3:::${local.logbucket}"
     prefix             = "executelogs/lambda/${aws_lambda_function.lambdahello.function_name}/"
     compression_format = "GZIP"
     # kms_key_arn not used since logbucket is SSE-S3 / AES256
     cloudwatch_logging_options {
       enabled         = true
-      log_group_name  = aws_cloudwatch_log_group.loggroup_firehose2s3loglambda.name
+      log_group_name  = aws_cloudwatch_log_group.loggroup_fh2s3hello.name
       log_stream_name = "logstream"
     }
   }
   tags = {
-    Name               = local.fh2s3_lambdahello_name
+    Name               = local.fh2s3_hello_name
     dataclassification = "restricted"
   }
   depends_on = [
-    aws_iam_role_policy_attachment.attach_role_policy_firehose2s3executelog,
+    aws_iam_role_policy_attachment.attach_role_policy_fh2s3executelog,
   ]
 }
 ##### CloudWatch SubscriptionFilter forwards logs to firehose to bucket
-resource "aws_cloudwatch_log_subscription_filter" "subfilter_cw2fh_lambdahello" {
-  name           = local.subfilter_lambdahello_name
+resource "aws_cloudwatch_log_subscription_filter" "subfilter_cw2fh_hello" {
+  name           = local.subfilter_cw2fhhello_name
   role_arn       = aws_iam_role.role_cw2fh.arn
-  log_group_name = aws_cloudwatch_log_group.loggroup_lambda.name
+  log_group_name = aws_cloudwatch_log_group.loggroup_lambdahello.name
   # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html
   filter_pattern  = " " # all events
-  destination_arn = aws_kinesis_firehose_delivery_stream.firehose2s3_loglambda.arn
+  destination_arn = aws_kinesis_firehose_delivery_stream.fh2s3_hello.arn
   depends_on = [
     aws_iam_role_policy_attachment.attach_role_policy_cw2fh,
-    aws_iam_role_policy_attachment.attach_role_policy_firehose2s3loglambda,
+    aws_iam_role_policy_attachment.attach_role_policy_fh2s3executelog,
   ]
 }
 
@@ -112,7 +112,7 @@ resource "aws_apigatewayv2_integration" "integration_hello" {
   integration_method = "POST"
 }
 ##### Lambda Permission
-resource "aws_lambda_permission" "apigw" {
+resource "aws_lambda_permission" "perm_hello" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.lambdahello.function_name
