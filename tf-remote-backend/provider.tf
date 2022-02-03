@@ -4,7 +4,7 @@ provider "aws" {
       app                = "tf-remote-backend"
       iacdeployer        = "terraform"
       iacdeployerversion = "v1.1.4"  # Value from: terraform -version
-      iacgitcommit       = "e32435b" # Value from: git rev-parse --short=7 HEAD
+      iacgitcommit       = "9f5374b" # Value from: git rev-parse --short=7 HEAD
     }
   }
   region      = "ca-central-1"
