@@ -53,7 +53,7 @@ resource "aws_iam_policy" "policy_fh2s3executelog" {
       "Effect": "Allow",
       "Resource": [
         "arn:aws:s3:::${local.logbucket}/accesslogs/*",
-        "arn:aws:s3:::${local.logbucket}/executelogs/*",
+        "arn:aws:s3:::${local.logbucket}/executelogs/*"
       ]
     }
   ]
