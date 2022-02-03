@@ -4,7 +4,7 @@ locals {
 }
 
 ####################
-##### SubscriptionFilter
+##### IAM for SubscriptionFilter
 resource "aws_iam_role" "role_cw2fhlambdalog" {
   name               = local.role_cw2fhlambdalog_name
   assume_role_policy = <<EOF

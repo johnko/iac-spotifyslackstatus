@@ -4,6 +4,7 @@ locals {
 }
 
 ####################
+##### IAM for Firehose
 resource "aws_iam_role" "role_firehose2s3executelog" {
   name               = local.role_firehose2s3executelog_name
   assume_role_policy = <<EOF

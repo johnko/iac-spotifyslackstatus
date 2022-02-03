@@ -4,7 +4,7 @@ locals {
 }
 
 ####################
-##### IAM for lambda
+##### IAM for Lambda
 resource "aws_iam_role" "role_lambda" {
   name               = local.role_lambda_name
   assume_role_policy = <<EOF
