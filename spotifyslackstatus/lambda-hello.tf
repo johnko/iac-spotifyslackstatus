@@ -1,8 +1,8 @@
 locals {
   loggroup_lambdahello_name = "/aws/lambda/${local.lambda_hello_name}"
   lambda_hello_name         = "${local.app}-hello"
-  loggroup_fh2s3hello_name = "/aws/kinesisfirehose/${local.fh2s3_hello_name}"
-  fh2s3_hello_name       = "${aws_lambda_function.lambdahello.function_name}-fh2s3"
+  loggroup_fh2s3hello_name  = "/aws/kinesisfirehose/${local.fh2s3_hello_name}"
+  fh2s3_hello_name          = "${aws_lambda_function.lambdahello.function_name}-fh2s3"
   subfilter_cw2fhhello_name = "${local.lambda_hello_name}-subfil"
 }
 
@@ -28,6 +28,7 @@ resource "aws_lambda_function" "lambdahello" {
   # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
   source_code_hash = filebase64sha256("index.zip")
   runtime          = "python3.8"
+  kms_key_arn      = aws_kms_key.cmk_spotifyslackstatus.arn # comment this out if you want to use AWS managed key
   environment {
     variables = {
       SESSION_DYNAMODB_REGION = local.region,
