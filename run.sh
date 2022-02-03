@@ -35,8 +35,8 @@ cat backend.template \
     | sed "s,GIT_COMMIT,$GIT_COMMIT," \
     > backend.tf
 
-[  -e lambda_function_payload.zip ] && rm lambda_function_payload.zip
-zip lambda_function_payload.zip index.py
+[  -e index.zip ] && rm index.zip
+zip index.zip index.py
 
 [ -d .terraform ] || terraform init
 terraform fmt

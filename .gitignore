@@ -1,4 +1,5 @@
 .terraform.tfstate.lock.info
 .terraform/
+index.zip
 terraform.tfstate*
 tf-remote-backend/backend.tf
