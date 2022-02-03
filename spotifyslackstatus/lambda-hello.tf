@@ -1,9 +1,9 @@
 locals {
-  lambda_hello_name         = "${local.app}-lambdahello"
   loggroup_lambdahello_name = "/aws/lambda/${local.lambda_hello_name}"
-  subfilter_cw2fh_lambdahello_name = "${local.lambda_hello_name}-subfil"
-  firehose2s3_hellolambda_name       = "${aws_lambda_function.lambdahello.function_name}-firehose2s3"
-  loggroup_firehose2s3loglambda_name = "/aws/kinesisfirehose/${local.firehose2s3_hellolambda_name}"
+  lambda_hello_name         = "${local.app}-lambdahello"
+  loggroup_fh2s3lambdahello_name = "/aws/kinesisfirehose/${local.fh2s3_lambdahello_name}"
+  fh2s3_lambdahello_name       = "${aws_lambda_function.lambdahello.function_name}-firehose2s3"
+  subfilter_lambdahello_name = "${local.lambda_hello_name}-subfil"
 }
 
 ##### Lambda LogGroup
@@ -47,17 +47,17 @@ resource "aws_lambda_function" "lambdahello" {
 ####################
 ##### Firehose LogGroup
 resource "aws_cloudwatch_log_group" "loggroup_firehose2s3loglambda" {
-  name              = local.loggroup_firehose2s3loglambda_name
+  name              = local.loggroup_fh2s3lambdahello_name
   retention_in_days = 90
   kms_key_id        = aws_kms_key.cmk_spotifyslackstatus.arn
   tags = {
-    Name               = local.loggroup_firehose2s3loglambda_name
+    Name               = local.loggroup_fh2s3lambdahello_name
     dataclassification = "restricted"
   }
 }
 ##### Firehose repeat for each lambda
 resource "aws_kinesis_firehose_delivery_stream" "firehose2s3_loglambda" {
-  name        = local.firehose2s3_hellolambda_name
+  name        = local.fh2s3_lambdahello_name
   destination = "extended_s3"
   server_side_encryption {
     enabled  = true
@@ -77,7 +77,7 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose2s3_loglambda" {
     }
   }
   tags = {
-    Name               = local.firehose2s3_hellolambda_name
+    Name               = local.fh2s3_lambdahello_name
     dataclassification = "restricted"
   }
   depends_on = [
@@ -86,7 +86,7 @@ resource "aws_kinesis_firehose_delivery_stream" "firehose2s3_loglambda" {
 }
 ##### CloudWatch SubscriptionFilter forwards logs to firehose to bucket
 resource "aws_cloudwatch_log_subscription_filter" "subfilter_cw2fh_lambdahello" {
-  name           = local.subfilter_cw2fh_lambdahello_name
+  name           = local.subfilter_lambdahello_name
   role_arn       = aws_iam_role.role_cw2fh.arn
   log_group_name = aws_cloudwatch_log_group.loggroup_lambda.name
   # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html
