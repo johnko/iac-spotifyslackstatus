@@ -2,7 +2,7 @@ terraform {
   backend "s3" {
     key = "APP_NAME/terraform.tfstate"
 
-    kms_key_id     = "arn:aws:kms:AWS_REGION:AWS_ACCOUNT_ID:alias/aws/s3"
+    kms_key_id     = "arn:aws:kms:AWS_REGION:AWS_ACCOUNT_ID:alias/cmk/tf-remote-backend"
     dynamodb_table = "statelock-AWS_ACCOUNT_ID"
     bucket         = "statebucket-AWS_ACCOUNT_ID"
 

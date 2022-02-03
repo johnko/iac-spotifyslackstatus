@@ -68,37 +68,13 @@ resource "aws_s3_bucket_ownership_controls" "bucketowner_statebucket" {
 }
 resource "aws_s3_bucket_policy" "bucketpolicy_statebucket" {
   bucket = aws_s3_bucket.statebucket.id
-  # https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html#sse-kms-bucket-keys
+  # Can't use DenyUnEncryptedObjectUploads with Terraform S3 Backend yet https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html#sse-kms-bucket-keys
   # https://aws.amazon.com/premiumsupport/knowledge-center/s3-bucket-store-kms-encrypted-objects/
   policy = <<EOF
 {
   "Version":"2012-10-17",
   "Id":"PutObjectPolicy",
   "Statement":[
-    {
-      "Sid": "DenyUnEncryptedObjectUploads",
-      "Effect": "Deny",
-      "Principal": "*",
-      "Action": "s3:PutObject",
-      "Resource": "${aws_s3_bucket.statebucket.arn}/*",
-      "Condition": {
-        "StringNotEquals": {
-          "s3:x-amz-server-side-encryption": "aws:kms"
-        }
-      }
-    },
-    {
-      "Sid": "DenyWrongAccountUploads",
-      "Effect": "Deny",
-      "Principal": "*",
-      "Action": "s3:PutObject",
-      "Resource": "${aws_s3_bucket.statebucket.arn}/*",
-      "Condition": {
-        "StringNotEquals": {
-          "aws:SourceAccount": "${local.accountid}"
-        }
-      }
-    },
     {
       "Sid": "DenyWrongKMS",
       "Effect": "Deny",
