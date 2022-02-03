@@ -1,9 +1,9 @@
 locals {
-  app = var.app
+  app                  = var.app
   loggroup_lambda_name = "/aws/lambda/${local.lambda_name}"
-  lambda_name         = "${local.app}-${var.service_name}"
+  lambda_name          = "${local.app}-${var.service_name}"
   loggroup_fh2s3_name  = "/aws/kinesisfirehose/${local.fh2s3_name}"
-  fh2s3_name          = "${aws_lambda_function.lambda.function_name}-fh2s3"
+  fh2s3_name           = "${aws_lambda_function.lambda.function_name}-fh2s3"
   subfilter_cw2fh_name = "${local.lambda_name}-subfil"
 }
 
@@ -62,8 +62,8 @@ resource "aws_kinesis_firehose_delivery_stream" "fh2s3" {
   destination = "extended_s3"
   server_side_encryption {
     enabled  = true
-    key_type = "CUSTOMER_MANAGED_CMK"                 # or AWS_OWNED_CMK
-    key_arn  = var.kms_key_arn # comment this out if you want to use AWS_OWNED_CMK
+    key_type = "CUSTOMER_MANAGED_CMK" # or AWS_OWNED_CMK
+    key_arn  = var.kms_key_arn        # comment this out if you want to use AWS_OWNED_CMK
   }
   extended_s3_configuration {
     role_arn           = var.iam_role_fh2s3executelog_arn
