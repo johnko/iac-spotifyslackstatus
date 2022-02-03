@@ -1,7 +1,7 @@
 locals {
   apigw_name          = "${local.app}-apigw"
   stage_apigw_name    = "${local.app}-apigw-stage"
-  loggroup_apigw_name = "/aws/apigateway/${local.apigw}"
+  loggroup_apigw_name = "/aws/apigateway/${local.apigw_name}"
 }
 
 ##### APIGW LogGroup

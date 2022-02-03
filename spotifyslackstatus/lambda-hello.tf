@@ -37,7 +37,7 @@ resource "aws_lambda_function" "lambdahello" {
   }
   depends_on = [
     aws_iam_role_policy_attachment.attach_role_policy_lambda,
-    aws_cloudwatch_log_group.loggroup_lambda,
+    aws_cloudwatch_log_group.loggroup_lambdahello,
   ]
 }
 
