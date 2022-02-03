@@ -1,6 +1,6 @@
 locals {
-  role_fh2s3executelog_name   = "${local.app}-firehose-executelogs-role"
-  policy_fh2s3executelog_name = "${local.app}-firehose-executelogs-policy"
+  role_fh2s3executelog_name   = "${local.app}-firehose2executelogs-role"
+  policy_fh2s3executelog_name = "${local.app}-fh2s3executelog-policy"
 }
 
 ####################
@@ -31,6 +31,7 @@ resource "aws_iam_policy" "policy_fh2s3executelog" {
   name        = local.policy_fh2s3executelog_name
   path        = "/"
   description = "Let Firehose write to logbucket"
+  # Don't allow logs:CreateLogGroup because we create the encrypted loggroup_lambda
   policy      = <<EOF
 {
   "Version": "2012-10-17",
@@ -38,7 +39,6 @@ resource "aws_iam_policy" "policy_fh2s3executelog" {
     {
       "Sid": "AllowLambdaCreateLogs",
       "Action": [
-        "logs:CreateLogGroup",
         "logs:CreateLogStream",
         "logs:PutLogEvents"
       ],

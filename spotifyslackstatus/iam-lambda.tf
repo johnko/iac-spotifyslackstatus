@@ -1,6 +1,6 @@
 locals {
   role_lambda_name   = "${local.app}-lambda-role"
-  policy_lambda_name = "${local.app}-lambda-log-policy"
+  policy_lambda_name = "${local.app}-logging-policy"
 }
 
 ####################

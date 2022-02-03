@@ -1,6 +1,6 @@
 locals {
-  role_cw2fh_name   = "${local.app}-subfil-role"
-  policy_cw2fh_name = "${local.app}-subfil-policy"
+  role_cw2fh_name   = "${local.app}-subfilter-role"
+  policy_cw2fh_name = "${local.app}-cw2fh-policy"
 }
 
 ####################
