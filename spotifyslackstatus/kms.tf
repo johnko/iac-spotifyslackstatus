@@ -1,11 +1,11 @@
 locals {
-  kmscloudwatch   = "cmk/cloudwatch"
+  alias_cmkspotifyslackstatus = "cmk/spotifyslackstatus"
 }
 
 ####################
 ##### KMS CMK CloudWatch
-resource "aws_kms_key" "cmk_cloudwatch" {
-  description              = "cmk_cloudwatch"
+resource "aws_kms_key" "cmk_spotifyslackstatus" {
+  description              = local.alias_cmkspotifyslackstatus
   key_usage                = "ENCRYPT_DECRYPT"
   customer_master_key_spec = "SYMMETRIC_DEFAULT"
   policy                   = <<EOF
@@ -32,12 +32,12 @@ resource "aws_kms_key" "cmk_cloudwatch" {
       ],
       "Condition": {
         "ArnEquals": {
-          "kms:EncryptionContext:aws:logs:arn": "arn:aws:logs:${local.region}:${local.accountid}:*"
+          "kms:EncryptionContext:aws:logs:arn": "arn:aws:logs:*:${local.accountid}:*"
         }
       },
       "Effect": "Allow",
       "Principal": {
-        "Service": "logs.${local.region}.amazonaws.com"
+        "Service": "logs.amazonaws.com"
       },
       "Resource": "*"
     }
@@ -48,11 +48,11 @@ EOF
   is_enabled               = true
   enable_key_rotation      = true
   tags = {
-    Name               = local.kmscloudwatch
+    Name               = local.alias_cmkspotifyslackstatus
     dataclassification = "restricted"
   }
 }
-resource "aws_kms_alias" "kmsalias_cloudwatch" {
-  name          = "alias/${local.kmscloudwatch}"
-  target_key_id = aws_kms_key.cmk_cloudwatch.key_id
+resource "aws_kms_alias" "alias_spotifyslackstatus" {
+  name          = "alias/${local.alias_cmkspotifyslackstatus}"
+  target_key_id = aws_kms_key.cmk_spotifyslackstatus.key_id
 }

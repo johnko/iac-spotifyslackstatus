@@ -1,11 +1,11 @@
-locals{
-  sessiontable    = "spotifyslackstatus-flask_sessions-${local.accountid}"
+locals {
+  sessiontable_name = "spotifyslackstatus-flask_sessions-${local.accountid}"
 }
 
 ####################
 ##### StateLock DynamoDB
 resource "aws_dynamodb_table" "statelock_table" {
-  name         = local.sessiontable
+  name         = local.sessiontable_name
   billing_mode = "PAY_PER_REQUEST"
   # https://pypi.org/project/flask-dynamodb-sessions/
   # aws dynamodb create-table --key-schema "AttributeName=id,KeyType=HASH" \
@@ -23,11 +23,12 @@ resource "aws_dynamodb_table" "statelock_table" {
     attribute_name = "ttl"
   }
   server_side_encryption {
-    enabled = true
+    enabled     = true
+    kms_key_arn = aws_kms_key.cmk_spotifyslackstatus.arn # comment this out if you want to use alias/aws/dynamodb
   }
   table_class = "STANDARD"
   tags = {
-    Name               = local.sessiontable
+    Name               = local.sessiontable_name
     dataclassification = "restricted"
   }
 }
