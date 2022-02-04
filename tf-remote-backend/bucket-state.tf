@@ -70,24 +70,22 @@ resource "aws_s3_bucket_policy" "bucketpolicy_statebucket" {
   bucket = aws_s3_bucket.statebucket.id
   # Can't use DenyUnEncryptedObjectUploads with Terraform S3 Backend yet https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingKMSEncryption.html#sse-kms-bucket-keys
   # https://aws.amazon.com/premiumsupport/knowledge-center/s3-bucket-store-kms-encrypted-objects/
-  policy = <<EOF
-{
-  "Version":"2012-10-17",
-  "Id":"PutObjectPolicy",
-  "Statement":[
-    {
-      "Sid": "DenyWrongKMS",
-      "Effect": "Deny",
-      "Principal": "*",
-      "Action": "s3:PutObject",
-      "Resource": "${aws_s3_bucket.statebucket.arn}/*",
-      "Condition": {
-        "StringNotLikeIfExists": {
-          "s3:x-amz-server-side-encryption-aws-kms-key-id": "${aws_kms_key.cmk_tfremotebackend.arn}"
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Id" : "PutObjectPolicy",
+    "Statement" : [
+      {
+        "Sid" : "DenyWrongKMS",
+        "Effect" : "Deny",
+        "Principal" : "*",
+        "Action" : "s3:PutObject",
+        "Resource" : "${aws_s3_bucket.statebucket.arn}/*",
+        "Condition" : {
+          "StringNotLikeIfExists" : {
+            "s3:x-amz-server-side-encryption-aws-kms-key-id" : "${aws_kms_key.cmk_tfremotebackend.arn}"
+          }
         }
       }
-    }
-  ]
-}
-EOF
+    ]
+  })
 }

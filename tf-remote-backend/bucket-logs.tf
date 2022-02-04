@@ -75,25 +75,23 @@ resource "aws_s3_bucket_ownership_controls" "bucketowner_logbucket" {
 resource "aws_s3_bucket_policy" "bucketpolicy_logbucket" {
   bucket = aws_s3_bucket.logbucket.id
   # https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-server-access-logging.html
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "S3ServerAccessLogsPolicy",
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "logging.s3.amazonaws.com"
-      },
-      "Action": "s3:PutObject",
-      "Resource": "${aws_s3_bucket.logbucket.arn}/accesslogs/*",
-      "Condition": {
-        "StringEquals": {
-          "aws:SourceAccount": "${local.accountid}"
+  policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Sid" : "S3ServerAccessLogsPolicy",
+        "Effect" : "Allow",
+        "Principal" : {
+          "Service" : "logging.s3.amazonaws.com"
+        },
+        "Action" : "s3:PutObject",
+        "Resource" : "${aws_s3_bucket.logbucket.arn}/accesslogs/*",
+        "Condition" : {
+          "StringEquals" : {
+            "aws:SourceAccount" : "${local.accountid}"
+          }
         }
       }
-    }
-  ]
-}
-EOF
+    ]
+  })
 }
