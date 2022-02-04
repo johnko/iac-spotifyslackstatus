@@ -4,7 +4,7 @@ provider "aws" {
       app                = "spotifyslackstatus"
       iacdeployer        = "terraform"
       iacdeployerversion = "v1.1.4"  # Value from: terraform -version
-      iacgitcommit       = "146a1bf" # Value from: git rev-parse --short=7 HEAD
+      iacgitcommit       = "be50288" # Value from: git rev-parse --short=7 HEAD
     }
   }
   region      = "ca-central-1"
