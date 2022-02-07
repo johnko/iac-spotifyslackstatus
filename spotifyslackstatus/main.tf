@@ -51,8 +51,8 @@ module "goodbye" {
   lambda_handler = "index.goodbye"
   lambda_runtime = "python3.8"
   # lambda_zip_file         = "index.zip"
-  lambda_s3_bucket = aws_s3_bucket.lambdabucket.id
-  lambda_s3_object = aws_s3_bucket_object.lambdaobject.id
+  lambda_s3_bucket        = aws_s3_bucket.lambdabucket.id
+  lambda_s3_object        = aws_s3_bucket_object.lambdaobject.id
   apigw_route_http_method = "GET"
   apigw_route_http_path   = "/goodbye"
 

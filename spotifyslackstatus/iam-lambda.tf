@@ -33,11 +33,11 @@ resource "aws_iam_policy" "policy_lambda" {
   policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [
-      {
-        "Effect" : "Deny",
-        "Action" : "logs:CreateLogGroup",
-        "Resource" : "*"
-      },
+      # {
+      #   "Effect" : "Deny",
+      #   "Action" : "logs:CreateLogGroup",
+      #   "Resource" : "*"
+      # },
       {
         "Sid" : "AllowLambdaCreateLogs",
         "Action" : [
