@@ -1,5 +1,3 @@
-data "aws_region" "this" {}
-
 variable "app" {
   type        = string
   description = "An app name. Will be used to prefix resource names."
@@ -38,7 +36,7 @@ variable "logbucket" {
 variable "session_dynamodb_region" {
   type        = string
   description = "A region of a DynamoDB Table for flask-dynamodb-sessions. See https://pypi.org/project/flask-dynamodb-sessions/"
-  default = data.aws_region.this.name
+  default = "ca-central-1"
 }
 
 variable "session_dynamodb_table" {
