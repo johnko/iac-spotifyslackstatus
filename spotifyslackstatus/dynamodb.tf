@@ -4,7 +4,7 @@ locals {
 
 ####################
 ##### StateLock DynamoDB
-resource "aws_dynamodb_table" "statelock_table" {
+resource "aws_dynamodb_table" "sessiontable" {
   name         = local.sessiontable_name
   billing_mode = "PAY_PER_REQUEST"
   # https://pypi.org/project/flask-dynamodb-sessions/
