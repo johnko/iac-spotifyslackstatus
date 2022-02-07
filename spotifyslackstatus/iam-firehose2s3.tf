@@ -34,6 +34,11 @@ resource "aws_iam_policy" "policy_fh2s3executelog" {
     "Version" : "2012-10-17",
     "Statement" : [
       {
+        "Effect" : "Deny",
+        "Action" : "logs:CreateLogGroup",
+        "Resource" : "*"
+      },
+      {
         "Sid" : "AllowLambdaCreateLogs",
         "Action" : [
           "logs:CreateLogStream",

@@ -34,6 +34,11 @@ resource "aws_iam_policy" "policy_lambda" {
     "Version" : "2012-10-17",
     "Statement" : [
       {
+        "Effect" : "Deny",
+        "Action" : "logs:CreateLogGroup",
+        "Resource" : "*"
+      },
+      {
         "Sid" : "AllowLambdaCreateLogs",
         "Action" : [
           "logs:CreateLogStream",
@@ -48,4 +53,8 @@ resource "aws_iam_policy" "policy_lambda" {
 resource "aws_iam_role_policy_attachment" "attach_role_policy_lambda" {
   role       = aws_iam_role.role_lambda.name
   policy_arn = aws_iam_policy.policy_lambda.arn
+}
+resource "aws_iam_role_policy_attachment" "attach_role_policy_lambdainsights" {
+  role       = aws_iam_role.role_lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy"
 }

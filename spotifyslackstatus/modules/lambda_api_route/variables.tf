@@ -73,7 +73,18 @@ variable "lambda_runtime" {
   description = "A Lambda runtime. Example: python3.8"
 }
 
-variable "lambda_zip_file" {
+# variable "lambda_zip_file" {
+#   type        = string
+#   description = "A file name of the packaged Lambda. Example: index.zip"
+#   default     = ""
+# }
+
+variable "lambda_s3_bucket" {
   type        = string
-  description = "A file name of the packaged Lambda. Example: index.zip"
+  description = "A name of the bucket where the packaged Lambda exists"
+}
+
+variable "lambda_s3_object" {
+  type        = string
+  description = "A name of the object where the packaged Lambda exists"
 }

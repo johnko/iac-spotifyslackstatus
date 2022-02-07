@@ -1,6 +1,7 @@
 locals {
   app                  = var.app
   loggroup_lambda_name = "/aws/lambda/${local.lambda_name}"
+  loggroup_lambdainsights_name = "/aws/lambda-insights/${local.lambda_name}"
   lambda_name          = "${local.app}-${var.service_name}"
   loggroup_fh2s3_name  = "/aws/kinesisfirehose/${local.fh2s3_name}"
   fh2s3_name           = "${aws_lambda_function.lambda.function_name}-fh2s3"
@@ -17,17 +18,32 @@ resource "aws_cloudwatch_log_group" "loggroup_lambda" {
     dataclassification = "restricted"
   }
 }
+##### Lambda Insights LogGroup
+resource "aws_cloudwatch_log_group" "loggroup_lambdainsights" {
+  name              = local.loggroup_lambdainsights_name
+  retention_in_days = 90
+  kms_key_id        = var.kms_key_arn
+  tags = {
+    Name               = local.loggroup_lambdainsights_name
+    dataclassification = "restricted"
+  }
+}
 ####################
 ##### Lambda
 resource "aws_lambda_function" "lambda" {
   function_name = local.lambda_name
   role          = var.iam_role_lambda_arn
   handler       = var.lambda_handler
-  filename      = var.lambda_zip_file
   # The filebase64sha256() function is available in Terraform 0.11.12 and later
   # For Terraform 0.11.11 and earlier, use the base64sha256() function and the file() function:
   # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
-  source_code_hash = filebase64sha256(var.lambda_zip_file)
+  # filename      = var.lambda_zip_file
+  # source_code_hash = filebase64sha256(var.lambda_zip_file)
+  s3_bucket = var.lambda_s3_bucket
+  s3_key = var.lambda_s3_object
+  # https://docs.aws.amazon.com/lambda/latest/dg/monitoring-insights.html
+  # TODOUPDATE https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versionsx86-64.html
+  layers = [ "arn:aws:lambda:ca-central-1:580247275435:layer:LambdaInsightsExtension:16" ]
   runtime          = var.lambda_runtime
   kms_key_arn      = var.kms_key_arn # comment this out if you want to use AWS managed key
   environment {
@@ -43,6 +59,11 @@ resource "aws_lambda_function" "lambda" {
   depends_on = [
     aws_cloudwatch_log_group.loggroup_lambda,
   ]
+}
+resource "aws_lambda_function_event_invoke_config" "example" {
+  function_name                = aws_lambda_function.lambda.function_name
+  maximum_event_age_in_seconds = 300
+  maximum_retry_attempts       = 0
 }
 
 ####################
