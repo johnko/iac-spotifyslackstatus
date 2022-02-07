@@ -45,6 +45,7 @@ resource "aws_lambda_function" "lambda" {
   # TODOUPDATE https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Lambda-Insights-extension-versionsx86-64.html
   layers = [ "arn:aws:lambda:ca-central-1:580247275435:layer:LambdaInsightsExtension:16" ]
   runtime          = var.lambda_runtime
+  timeout          = 30 # seconds
   kms_key_arn      = var.kms_key_arn # comment this out if you want to use AWS managed key
   environment {
     variables = {

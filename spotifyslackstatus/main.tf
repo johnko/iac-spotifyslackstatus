@@ -35,7 +35,6 @@ module "hello" {
   apigw_id                     = aws_apigatewayv2_api.apigw.id
   apigw_exec_arn               = aws_apigatewayv2_api.apigw.execution_arn
   session_dynamodb_table       = aws_dynamodb_table.statelock_table.name
-  session_dynamodb_region      = local.region
 
   depends_on = [
     aws_iam_role_policy_attachment.attach_role_policy_lambda,
@@ -65,7 +64,6 @@ module "goodbye" {
   apigw_id                     = aws_apigatewayv2_api.apigw.id
   apigw_exec_arn               = aws_apigatewayv2_api.apigw.execution_arn
   session_dynamodb_table       = aws_dynamodb_table.statelock_table.name
-  session_dynamodb_region      = local.region
 
   depends_on = [
     aws_iam_role_policy_attachment.attach_role_policy_lambda,
