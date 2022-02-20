@@ -110,7 +110,7 @@ resource "aws_cloudwatch_log_subscription_filter" "subfilter_cw2fh" {
   role_arn       = var.iam_role_cw2fh_arn
   log_group_name = aws_cloudwatch_log_group.loggroup_lambda.name
   # https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html
-  filter_pattern  = " " # all events
+  filter_pattern  = "" # all events
   destination_arn = aws_kinesis_firehose_delivery_stream.fh2s3.arn
 }
 
